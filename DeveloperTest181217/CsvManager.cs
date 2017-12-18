@@ -132,15 +132,19 @@ namespace DeveloperTest181217
         {
             bool bFileValid = true;
             oLoadedCsv = null;
-
-            try
+            if (iFilePath.EndsWith(".csv"))
             {
-                oLoadedCsv = mLoader.Load(iFilePath);
+                try
+                {
+                    oLoadedCsv = mLoader.Load(iFilePath);
+                }
+                catch (Exception)
+                {
+                    bFileValid = false;
+                }
             }
-            catch (Exception e)
-            {
+            else
                 bFileValid = false;
-            }
 
             return bFileValid;
         }

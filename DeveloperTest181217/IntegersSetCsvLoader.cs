@@ -23,5 +23,84 @@ namespace DeveloperTest181217
 
             return new IntegersSetCsv(iFilePath, intArray);
         }
+
+        // --------------------------------------------Nested tests class--------------------------------------------
+        public class Tests
+        {
+            string mClassName = "IntegerSetCsvLoader Class";
+
+            public void Run(string passedStr, string failedStr)
+            {
+                if (testIntegerSetCsvLoaderEqual())
+                    Console.WriteLine(String.Format(passedStr, mClassName, "EQUAL"));
+                else
+                    Console.WriteLine(String.Format(failedStr, mClassName, "EQUAL"));
+
+                if (testIntegerSetCsvLoaderNotEqual())
+                    Console.WriteLine(String.Format(passedStr, mClassName, "NOT_EQUAL"));
+                else
+                    Console.WriteLine(String.Format(failedStr, mClassName, "NOT_EQUAL"));
+
+                if (testIntegerSetCsvLoaderErrorLoading())
+                    Console.WriteLine(String.Format(passedStr, mClassName, "ERROR_LOADING"));
+                else
+                    Console.WriteLine(String.Format(failedStr, mClassName, "ERROR_LOADING"));
+            }
+
+            private bool testIntegerSetCsvLoaderEqual()
+            {
+                string testFile1Path = Path.Combine(Directory.GetCurrentDirectory(), "text_csv1.csv");
+                IntegersSetCsvLoader loader = new IntegersSetCsvLoader();
+
+                StreamWriter testFile1Writer = File.CreateText(testFile1Path);
+                testFile1Writer.WriteLine("33,21,68,34,67,222,3,4,1");
+                testFile1Writer.Close();
+
+                IntegersSetCsv testFile1 = loader.Load(testFile1Path);
+                List<int> expectedRes = new List<int> { 33, 21, 68, 34, 67, 222, 3, 4, 1 };
+                if (Enumerable.SequenceEqual(testFile1.Array, expectedRes))
+                    return true;
+                else
+                    return false;
+            }
+
+            private bool testIntegerSetCsvLoaderNotEqual()
+            {
+                string testFile1Path = Path.Combine(Directory.GetCurrentDirectory(), "text_csv1.csv");
+                IntegersSetCsvLoader loader = new IntegersSetCsvLoader();
+
+                StreamWriter testFile1Writer = File.CreateText(testFile1Path);
+                testFile1Writer.WriteLine("33,21,68,34,67,222,3,4,1,5");
+                testFile1Writer.Close();
+
+                IntegersSetCsv testFile1 = loader.Load(testFile1Path);
+                List<int> notExpectedRes = new List<int> { 33, 21, 68, 34, 67, 222, 3, 4, 1 };
+                if (!Enumerable.SequenceEqual(testFile1.Array, notExpectedRes))
+                    return true;
+                else
+                    return false;
+            }
+
+            private bool testIntegerSetCsvLoaderErrorLoading()
+            {
+                string testFile1Path = Path.Combine(Directory.GetCurrentDirectory(), "text_csv1.csv");
+                IntegersSetCsvLoader loader = new IntegersSetCsvLoader();
+
+                StreamWriter testFile1Writer = File.CreateText(testFile1Path);
+                testFile1Writer.WriteLine("33,21,68,34,67,222,3,4,1, sdjksjsdlk");
+                testFile1Writer.Close();
+
+                try
+                {
+                    IntegersSetCsv testFile1 = loader.Load(testFile1Path);
+                }
+                catch (Exception)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+        }
     }
 }
