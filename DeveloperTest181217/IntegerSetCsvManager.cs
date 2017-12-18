@@ -33,11 +33,16 @@ namespace DeveloperTest181217
 
             Thread scoreAdderThread = new Thread(
                 () => getPathsToCopyAndScores(iSourceDirPath, iAuxDirPath, iMinEqualNumsForSimilarity, _scoresQueue));
+            scoreAdderThread.Name = "Score Adder Thread";
             Thread filesCopyThread = new Thread(
                 () => writeFilesAndScoresToDestDir(iDestDirPath, _scoresQueue));
+            filesCopyThread.Name = "files Copy Thread";
 
             scoreAdderThread.Start();
             filesCopyThread.Start();
+
+            scoreAdderThread.Join();
+            filesCopyThread.Join();
         }
 
         private void writeFilesAndScoresToDestDir(string iDestDirPath, ConcurrentQueue<KeyValuePair<string, int>?> iScoresDict)
@@ -46,10 +51,11 @@ namespace DeveloperTest181217
 
             StreamWriter destScoresTextFile = File.CreateText(Path.Combine(iDestDirPath, "scores.txt"));
 
-            while (mroFinishSignal.WaitOne(1))
+            while (!mroFinishSignal.WaitOne(1))
             {
                 string[] currSplittedFilePath;
                 string currFileName;
+                string currFilePath;
                 // wait to be notified
                 mroContinueSignal.WaitOne();
 
@@ -57,8 +63,11 @@ namespace DeveloperTest181217
                 while (iScoresDict.TryDequeue(out score))
                 {
                     currSplittedFilePath = score.Value.Key.Split('\\');
-                    currFileName = currSplittedFilePath[currSplittedFilePath.Length];
-                    File.Copy(score.Value.Key, Path.Combine(iDestDirPath, currFileName));
+                    currFileName = currSplittedFilePath[currSplittedFilePath.Length - 1];
+                    currFilePath = Path.Combine(iDestDirPath, currFileName);
+                    if (File.Exists(currFilePath))  // Delete old file if it already exists
+                        File.Delete(currFilePath);
+                    File.Copy(score.Value.Key, currFilePath);
                     destScoresTextFile.WriteLine(currFileName + "   max intersection score: " + score.Value);
                 }
 
@@ -177,11 +186,11 @@ namespace DeveloperTest181217
 
             public void Run(string passedStr, string failedStr)
             {
-                /*if (testIntegerSetCsvLoaderEqual())
-                    Console.WriteLine(String.Format(passedStr, mClassName, "EQUAL"));
+                if (test1())
+                    Console.WriteLine(String.Format(passedStr, mClassName, "1"));
                 else
-                    Console.WriteLine(String.Format(failedStr, mClassName, "EQUAL"));
-
+                    Console.WriteLine(String.Format(failedStr, mClassName, "1"));
+                /*
                 if (testIntegerSetCsvLoaderNotEqual())
                     Console.WriteLine(String.Format(passedStr, mClassName, "NOT_EQUAL"));
                 else
@@ -191,6 +200,57 @@ namespace DeveloperTest181217
                     Console.WriteLine(String.Format(passedStr, mClassName, "ERROR_LOADING"));
                 else
                     Console.WriteLine(String.Format(failedStr, mClassName, "ERROR_LOADING"));*/
+            }
+
+            private bool test1(bool iEraseFilesAtTestEnd = false)
+            {
+                bool testRes = false;
+
+                // Create Source Dir
+                string sourceDirPath = Path.Combine(Directory.GetCurrentDirectory(), "src");
+                string[] sourceContents = { "", "1,2", "1,2,3", "1,2,3,4" };
+                createCsvDir(sourceDirPath, sourceContents);
+
+                // Create Aux Dir
+                string auxDirPath = Path.Combine(Directory.GetCurrentDirectory(), "auxillery");
+                string[] auxContents = { "", "1,2", "1,2,3", "1,2,3,4" };
+                createCsvDir(auxDirPath, auxContents);
+
+                // Test
+                IntegersSetCsvManager manager = new IntegersSetCsvManager();
+                string destDirPath = Path.Combine(Directory.GetCurrentDirectory(), "dest");
+                manager.CopySimilarCsvs(sourceDirPath, auxDirPath, destDirPath, 3);
+                if (Directory.GetFiles(destDirPath).Length == 4)
+                    testRes = true;
+
+                if (iEraseFilesAtTestEnd)
+                {
+                    // Erase Created Directories recursivly
+                    Directory.Delete(sourceDirPath, true);
+                    Directory.Delete(auxDirPath, true);
+                    if (Directory.Exists(destDirPath))
+                        Directory.Delete(destDirPath, true);
+                }
+ 
+                return testRes;
+            }
+
+            private void createCsvDir(string iDirPath, string[] iContents)
+            {
+                Directory.CreateDirectory(iDirPath);
+
+                for (int i = 0; i < iContents.Length; i++)
+                {
+                    createNewCsvFile(iDirPath, i, iContents[i]);
+                }
+            }
+
+            private void createNewCsvFile(string iDirPath, int iFileId, string iFileContent)
+            {
+                string testFile1Path = Path.Combine(iDirPath, "text_csv" + iFileId + ".csv");
+                StreamWriter testFile1Writer = File.CreateText(testFile1Path);
+                testFile1Writer.WriteLine(iFileContent);
+                testFile1Writer.Close();
             }
         }
     }
