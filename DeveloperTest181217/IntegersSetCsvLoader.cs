@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace DeveloperTest181217
 {
@@ -10,7 +11,7 @@ namespace DeveloperTest181217
     {
         public IntegersSetCsv Load(string iFilePath)
         {
-            System.IO.StreamReader csvFile = System.IO.File.OpenText(iFilePath);
+            StreamReader csvFile = File.OpenText(iFilePath);
             string[] intArrayAsStrings = csvFile.ReadToEnd().Split(',');
             csvFile.Close();
 
