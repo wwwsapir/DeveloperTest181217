@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 using System.Threading;
 using System.Collections.Concurrent;
@@ -28,19 +25,21 @@ namespace DeveloperTest181217
                 return;
             }
 
-            // The read-write queue between threads will be made from nullable KeyValuePairs
-            ConcurrentQueue< KeyValuePair<string, int>? > _scoresQueue = new ConcurrentQueue< KeyValuePair<string, int>? >();
+            // The read-write queue between threads will be made from nullable KeyValuePairs (because KeyValuePair itself can't be null)
+            ConcurrentQueue< KeyValuePair<string, int>? > scoresQueue = new ConcurrentQueue< KeyValuePair<string, int>? >();
 
             Thread scoreAdderThread = new Thread(
-                () => getPathsToCopyAndScores(iSourceDirPath, iAuxDirPath, iMinEqualNumsForSimilarity, _scoresQueue));
+                () => getPathsToCopyAndScores(iSourceDirPath, iAuxDirPath, iMinEqualNumsForSimilarity, scoresQueue));
             scoreAdderThread.Name = "Score Adder Thread";
             Thread filesCopyThread = new Thread(
-                () => writeFilesAndScoresToDestDir(iDestDirPath, _scoresQueue));
+                () => writeFilesAndScoresToDestDir(iDestDirPath, scoresQueue));
             filesCopyThread.Name = "files Copy Thread";
 
+            // Start threads simultaneously
             scoreAdderThread.Start();
             filesCopyThread.Start();
 
+            // Wait for both threads to finish
             scoreAdderThread.Join();
             filesCopyThread.Join();
         }
@@ -57,13 +56,13 @@ namespace DeveloperTest181217
                 string[] currSplittedFilePath;
                 string currFileName;
                 string currFilePath;
-                // wait to be notified
+                // wait for notification about a new item in the dictinary (new file to copy)
                 mroContinueSignal.WaitOne();
 
                 KeyValuePair<string, int>? score = null;
                 while (iScoresDict.TryDequeue(out score))
                 {
-                    if (score.Value.Key == "END")   // Signal from writer to stop the reading from queue
+                    if (score.Value.Key == "END")   // Signal item from writer to stop the reading from queue
                     {
                         bContinueReading = false;
                         break;
@@ -72,9 +71,11 @@ namespace DeveloperTest181217
                     currSplittedFilePath = score.Value.Key.Split('\\');
                     currFileName = currSplittedFilePath[currSplittedFilePath.Length - 1];
                     currFilePath = Path.Combine(iDestDirPath, currFileName);
-                    if (File.Exists(currFilePath))  // Delete old file if it already exists
+                    // Copy the file to destination dir
+                    if (File.Exists(currFilePath))  // Replace destination file if it already exists
                         File.Delete(currFilePath);
                     File.Copy(score.Value.Key, currFilePath);
+                    // Add file info to scores file in destination dir
                     destScoresTextFile.WriteLine(currFileName + "   max intersection score: " + score.Value.Value);
                 }
 
@@ -90,9 +91,12 @@ namespace DeveloperTest181217
         {
             string[] iSourceDirFiles = Directory.GetFiles(iSourceDirPath);
             string[] iAuxDirFiles = Directory.GetFiles(iAuxDirPath);
+
             IntegersSetCsv currCsvAux, currCsvSource;
             int currSimilarityScore, maxSimilarityScoreForFile;
             bool bNeedCopyFile = false;
+
+            // Go through files in source dir and check if they are similar to any file in auxillery dir
             foreach (string sourceFilePath in iSourceDirFiles)
             {
                 if (!loadFileAndCheckInput(sourceFilePath, out currCsvSource))
@@ -157,6 +161,7 @@ namespace DeveloperTest181217
             return (oSimilarityScore >= iMinEqualNumsForSimilarity);
         }
 
+        // Loads csv file into IntegersSetCsv object and returns true if loading and input are valid
         private bool loadFileAndCheckInput(string iFilePath, out IntegersSetCsv oLoadedCsv)
         {
             bool bFileValid = true;
@@ -178,6 +183,7 @@ namespace DeveloperTest181217
             return bFileValid;
         }
 
+        // Checks that source and auxillery folders exist
         private bool isInputValid(string iSourceDirPath, string iAuxDirPath, out string oErrorMsg)
         {
             string dirNotFoundMsg = "Invalid Input: path '{0}' is not a directory.";
@@ -313,6 +319,7 @@ namespace DeveloperTest181217
                     return false;
             }
 
+            // Helper function for tests
             private void createCsvDir(string iDirPath, string[] iContents)
             {
                 Directory.CreateDirectory(iDirPath);
@@ -323,6 +330,7 @@ namespace DeveloperTest181217
                 }
             }
 
+            // Helper function for tests
             private void createNewCsvFile(string iDirPath, int iFileId, string iFileContent)
             {
                 string testFile1Path = Path.Combine(iDirPath, "text_csv" + iFileId + ".csv");

@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 
 namespace DeveloperTest181217
 {
+    // A class to load a csv file that contains only one set of integers in one row, separated by commas
     public class IntegersSetCsvLoader
     {
         public IntegersSetCsv Load(string iFilePath)
@@ -16,7 +15,7 @@ namespace DeveloperTest181217
             csvFile.Close();
 
             List<int> intArray = new List<int>(intArrayAsStrings.Length);
-            if (intArrayAsStrings[0] != "")
+            if (intArrayAsStrings[0] != "") // Skip loop if file is empty from text to avoid exception because an empty file is valid
             {
                 foreach (string intStr in intArrayAsStrings)
                 {

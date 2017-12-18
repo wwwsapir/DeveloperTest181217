@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 
 namespace DeveloperTest181217
@@ -36,6 +32,7 @@ namespace DeveloperTest181217
 
             Console.WriteLine("Please enter full destination directory path:");
             destDirPath = Console.ReadLine();
+            // We don't need to check destination since it will be created if it doesn't exist
 
             do
             {
