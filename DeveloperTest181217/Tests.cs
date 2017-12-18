@@ -16,6 +16,9 @@ namespace DeveloperTest181217
         {
             IntegersSetCsvLoader.Tests loaderTests = new IntegersSetCsvLoader.Tests();
             loaderTests.Run(testPassedStr, testFailedStr);
+
+            IntegersSetCsvManager.Tests managerTests = new IntegersSetCsvManager.Tests();
+            managerTests.Run(testPassedStr, testFailedStr);
         }
     }
 }

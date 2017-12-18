@@ -24,6 +24,7 @@ namespace DeveloperTest181217
             return new IntegersSetCsv(iFilePath, intArray);
         }
 
+
         // --------------------------------------------Nested tests class--------------------------------------------
         public class Tests
         {
@@ -31,23 +32,23 @@ namespace DeveloperTest181217
 
             public void Run(string passedStr, string failedStr)
             {
-                if (testIntegerSetCsvLoaderEqual())
+                if (equalTest())
                     Console.WriteLine(String.Format(passedStr, mClassName, "EQUAL"));
                 else
                     Console.WriteLine(String.Format(failedStr, mClassName, "EQUAL"));
 
-                if (testIntegerSetCsvLoaderNotEqual())
+                if (notEqualTest())
                     Console.WriteLine(String.Format(passedStr, mClassName, "NOT_EQUAL"));
                 else
                     Console.WriteLine(String.Format(failedStr, mClassName, "NOT_EQUAL"));
 
-                if (testIntegerSetCsvLoaderErrorLoading())
+                if (errorLoadingTest())
                     Console.WriteLine(String.Format(passedStr, mClassName, "ERROR_LOADING"));
                 else
                     Console.WriteLine(String.Format(failedStr, mClassName, "ERROR_LOADING"));
             }
 
-            private bool testIntegerSetCsvLoaderEqual()
+            private bool equalTest()
             {
                 string testFile1Path = Path.Combine(Directory.GetCurrentDirectory(), "text_csv1.csv");
                 IntegersSetCsvLoader loader = new IntegersSetCsvLoader();
@@ -65,7 +66,7 @@ namespace DeveloperTest181217
                     return false;
             }
 
-            private bool testIntegerSetCsvLoaderNotEqual()
+            private bool notEqualTest()
             {
                 string testFile1Path = Path.Combine(Directory.GetCurrentDirectory(), "text_csv1.csv");
                 IntegersSetCsvLoader loader = new IntegersSetCsvLoader();
@@ -82,7 +83,7 @@ namespace DeveloperTest181217
                     return false;
             }
 
-            private bool testIntegerSetCsvLoaderErrorLoading()
+            private bool errorLoadingTest()
             {
                 string testFile1Path = Path.Combine(Directory.GetCurrentDirectory(), "text_csv1.csv");
                 IntegersSetCsvLoader loader = new IntegersSetCsvLoader();

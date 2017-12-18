@@ -168,5 +168,30 @@ namespace DeveloperTest181217
 
             return bInputValid;
         }
+
+
+        // --------------------------------------------Nested tests class--------------------------------------------
+        public class Tests
+        {
+            string mClassName = "IntegersSetCsvManager Class";
+
+            public void Run(string passedStr, string failedStr)
+            {
+                /*if (testIntegerSetCsvLoaderEqual())
+                    Console.WriteLine(String.Format(passedStr, mClassName, "EQUAL"));
+                else
+                    Console.WriteLine(String.Format(failedStr, mClassName, "EQUAL"));
+
+                if (testIntegerSetCsvLoaderNotEqual())
+                    Console.WriteLine(String.Format(passedStr, mClassName, "NOT_EQUAL"));
+                else
+                    Console.WriteLine(String.Format(failedStr, mClassName, "NOT_EQUAL"));
+
+                if (testIntegerSetCsvLoaderErrorLoading())
+                    Console.WriteLine(String.Format(passedStr, mClassName, "ERROR_LOADING"));
+                else
+                    Console.WriteLine(String.Format(failedStr, mClassName, "ERROR_LOADING"));*/
+            }
+        }
     }
 }
