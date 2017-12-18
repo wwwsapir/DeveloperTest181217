@@ -124,6 +124,7 @@ namespace DeveloperTest181217
 
             // Signal the reading thread that queue has ended
             iScoresDict.Enqueue(new KeyValuePair<string, int>("END", -1));
+            mroContinueSignal.Set();
         }
 
         // Linear complexity function to check how many identical numbers are between two integer-set-csv files
@@ -179,7 +180,7 @@ namespace DeveloperTest181217
 
         private bool isInputValid(string iSourceDirPath, string iAuxDirPath, out string oErrorMsg)
         {
-            string dirNotFoundMsg = "ERROR: path '{0}' is not a directory.";
+            string dirNotFoundMsg = "Invalid Input: path '{0}' is not a directory.";
             bool bInputValid = true;
             oErrorMsg = "OK";
 
@@ -202,53 +203,56 @@ namespace DeveloperTest181217
         public class Tests
         {
             string mClassName = "IntegersSetCsvManager Class";
+            int testsCount = 1;
 
             public void Run(string passedStr, string failedStr)
             {
-                if (sameSrcAndAuxTest(0, true))
-                    Console.WriteLine(String.Format(passedStr, mClassName, "1"));
+                if (sameSrcAndAuxTest(testsCount, 0))
+                    Console.WriteLine(String.Format(passedStr, mClassName, testsCount));
                 else
-                    Console.WriteLine(String.Format(failedStr, mClassName, "1"));
-                if (sameSrcAndAuxTest(2, true))
-                    Console.WriteLine(String.Format(passedStr, mClassName, "2"));
+                    Console.WriteLine(String.Format(failedStr, mClassName, testsCount));
+                testsCount++;
+                if (sameSrcAndAuxTest(testsCount, 2))
+                    Console.WriteLine(String.Format(passedStr, mClassName, testsCount));
                 else
-                    Console.WriteLine(String.Format(failedStr, mClassName, "2"));
-                /*
-                if (sameSrcAndAuxTest(8))
-                    Console.WriteLine(String.Format(passedStr, mClassName, "3"));
+                    Console.WriteLine(String.Format(failedStr, mClassName, testsCount));
+                testsCount++;
+                if (sameSrcAndAuxTest(testsCount, 8))
+                    Console.WriteLine(String.Format(passedStr, mClassName, testsCount));
                 else
-                    Console.WriteLine(String.Format(failedStr, mClassName, "3"));
-                
-                if (testIntegerSetCsvLoaderNotEqual())
-                    Console.WriteLine(String.Format(passedStr, mClassName, "NOT_EQUAL"));
+                    Console.WriteLine(String.Format(failedStr, mClassName, testsCount));
+                testsCount++;
+                if (differentSrcAndAuxTest(testsCount))
+                    Console.WriteLine(String.Format(passedStr, mClassName, testsCount));
                 else
-                    Console.WriteLine(String.Format(failedStr, mClassName, "NOT_EQUAL"));
-
-                if (testIntegerSetCsvLoaderErrorLoading())
-                    Console.WriteLine(String.Format(passedStr, mClassName, "ERROR_LOADING"));
+                    Console.WriteLine(String.Format(failedStr, mClassName, testsCount));
+                testsCount++;
+                if (invalidInputTest(testsCount))
+                    Console.WriteLine(String.Format(passedStr, mClassName, testsCount));
                 else
-                    Console.WriteLine(String.Format(failedStr, mClassName, "ERROR_LOADING"));*/
+                    Console.WriteLine(String.Format(failedStr, mClassName, testsCount));
+                testsCount++;
             }
 
-            private bool sameSrcAndAuxTest(int iMinNumToSimilarity, bool iEraseFilesAtTestEnd = false)
+            private bool sameSrcAndAuxTest(int iTestsCount, int iMinNumToSimilarity, bool iEraseFilesAtTestEnd = false)
             {
                 bool testRes = false;
 
                 // Create Source Dir
-                string sourceDirPath = Path.Combine(Directory.GetCurrentDirectory(), "src");
+                string sourceDirPath = Path.Combine(Directory.GetCurrentDirectory(), "src" + iTestsCount);
                 string[] sourceContents = { "", "1", "1,2", "1,2,3", "1,2,3,4" };
                 createCsvDir(sourceDirPath, sourceContents);
 
                 // Create Aux Dir
-                string auxDirPath = Path.Combine(Directory.GetCurrentDirectory(), "auxillery");
+                string auxDirPath = Path.Combine(Directory.GetCurrentDirectory(), "aux" + iTestsCount);
                 string[] auxContents = { "", "1", "1,2", "1,2,3", "1,2,3,4" };
                 createCsvDir(auxDirPath, auxContents);
 
                 // Test
                 IntegersSetCsvManager manager = new IntegersSetCsvManager();
-                string destDirPath = Path.Combine(Directory.GetCurrentDirectory(), "dest");
+                string destDirPath = Path.Combine(Directory.GetCurrentDirectory(), "dest" + iTestsCount);
                 manager.CopySimilarCsvs(sourceDirPath, auxDirPath, destDirPath, iMinNumToSimilarity);
-                if (Directory.GetFiles(destDirPath).Length == Math.Max((6 - iMinNumToSimilarity), 0))
+                if (Directory.GetFiles(destDirPath).Length == Math.Max((6 - iMinNumToSimilarity), 1))
                     testRes = true;
 
                 if (iEraseFilesAtTestEnd)
@@ -261,6 +265,52 @@ namespace DeveloperTest181217
                 }
  
                 return testRes;
+            }
+
+            private bool differentSrcAndAuxTest(int iTestsCount, bool iEraseFilesAtTestEnd = false)
+            {
+                bool testRes = false;
+
+                // Create Source Dir
+                string sourceDirPath = Path.Combine(Directory.GetCurrentDirectory(), "src" + iTestsCount);
+                string[] sourceContents = { "", "8", "1,7", "1,2,3", "1,2,4,8" };
+                createCsvDir(sourceDirPath, sourceContents);
+
+                // Create Aux Dir
+                string auxDirPath = Path.Combine(Directory.GetCurrentDirectory(), "aux" + iTestsCount);
+                string[] auxContents = { "", "1", "1,2", "1,2,3", "1,2,3,4" };
+                createCsvDir(auxDirPath, auxContents);
+
+                // Test
+                IntegersSetCsvManager manager = new IntegersSetCsvManager();
+                string destDirPath = Path.Combine(Directory.GetCurrentDirectory(), "dest" + iTestsCount);
+                manager.CopySimilarCsvs(sourceDirPath, auxDirPath, destDirPath, 2);
+                if (Directory.GetFiles(destDirPath).Length == 3)
+                    testRes = true;
+
+                if (iEraseFilesAtTestEnd)
+                {
+                    // Erase Created Directories recursivly
+                    Directory.Delete(sourceDirPath, true);
+                    Directory.Delete(auxDirPath, true);
+                    if (Directory.Exists(destDirPath))
+                        Directory.Delete(destDirPath, true);
+                }
+
+                return testRes;
+            }
+
+            private bool invalidInputTest(int iTestsCount)
+            {
+                IntegersSetCsvManager manager = new IntegersSetCsvManager();
+                string sourceDirPath = Path.Combine(Directory.GetCurrentDirectory(), "src" + (iTestsCount - 1));   // Exists from previous test
+                string auxDirPath = Path.Combine(Directory.GetCurrentDirectory(), "aux" + iTestsCount);  // Doesn't Exist
+                string destDirPath = Path.Combine(Directory.GetCurrentDirectory(), "aux" + iTestsCount); // Shouldn't be created
+                manager.CopySimilarCsvs(sourceDirPath, auxDirPath, destDirPath, 2);
+                if (!Directory.Exists(destDirPath))
+                    return true;
+                else
+                    return false;
             }
 
             private void createCsvDir(string iDirPath, string[] iContents)
