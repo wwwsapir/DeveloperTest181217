@@ -14,7 +14,6 @@ namespace DeveloperTest181217
     {
         private IntegersSetCsvLoader mLoader = new IntegersSetCsvLoader();
         private readonly AutoResetEvent mroContinueSignal = new AutoResetEvent(false);
-        private readonly AutoResetEvent mroFinishSignal = new AutoResetEvent(false);
 
         // This method copies CSV files from Source to Dest Dir.
         // If dest dir doesn't exist, it will be created.
@@ -29,6 +28,7 @@ namespace DeveloperTest181217
                 return;
             }
 
+            // The read-write queue between threads will be made from nullable KeyValuePairs
             ConcurrentQueue< KeyValuePair<string, int>? > _scoresQueue = new ConcurrentQueue< KeyValuePair<string, int>? >();
 
             Thread scoreAdderThread = new Thread(
@@ -50,8 +50,9 @@ namespace DeveloperTest181217
             DirectoryInfo destDir = Directory.CreateDirectory(iDestDirPath);
 
             StreamWriter destScoresTextFile = File.CreateText(Path.Combine(iDestDirPath, "scores.txt"));
+            bool bContinueReading = true;
 
-            while (!mroFinishSignal.WaitOne(1))
+            while (bContinueReading)
             {
                 string[] currSplittedFilePath;
                 string currFileName;
@@ -62,13 +63,19 @@ namespace DeveloperTest181217
                 KeyValuePair<string, int>? score = null;
                 while (iScoresDict.TryDequeue(out score))
                 {
+                    if (score.Value.Key == "END")   // Signal from writer to stop the reading from queue
+                    {
+                        bContinueReading = false;
+                        break;
+                    }
+
                     currSplittedFilePath = score.Value.Key.Split('\\');
                     currFileName = currSplittedFilePath[currSplittedFilePath.Length - 1];
                     currFilePath = Path.Combine(iDestDirPath, currFileName);
                     if (File.Exists(currFilePath))  // Delete old file if it already exists
                         File.Delete(currFilePath);
                     File.Copy(score.Value.Key, currFilePath);
-                    destScoresTextFile.WriteLine(currFileName + "   max intersection score: " + score.Value);
+                    destScoresTextFile.WriteLine(currFileName + "   max intersection score: " + score.Value.Value);
                 }
 
             }
@@ -84,12 +91,15 @@ namespace DeveloperTest181217
             string[] iSourceDirFiles = Directory.GetFiles(iSourceDirPath);
             string[] iAuxDirFiles = Directory.GetFiles(iAuxDirPath);
             IntegersSetCsv currCsvAux, currCsvSource;
-            int currSimilarityScore;
+            int currSimilarityScore, maxSimilarityScoreForFile;
+            bool bNeedCopyFile = false;
             foreach (string sourceFilePath in iSourceDirFiles)
             {
                 if (!loadFileAndCheckInput(sourceFilePath, out currCsvSource))
                     continue;
 
+                maxSimilarityScoreForFile = 0;
+                bNeedCopyFile = false;
                 foreach (string auxFilePath in iAuxDirFiles)
                 {
                     if (!loadFileAndCheckInput(auxFilePath, out currCsvAux))
@@ -97,14 +107,23 @@ namespace DeveloperTest181217
 
                     if (areIntegerSetCsvsSimilar(currCsvAux, currCsvSource, iMinEqualNumsForSimilarity, out currSimilarityScore))
                     {
-                        iScoresDict.Enqueue(new KeyValuePair<string, int>(sourceFilePath, currSimilarityScore));
-                        // notify the waiting thread
-                        mroContinueSignal.Set();
-                        break;
+                        bNeedCopyFile = true;
+                        if (maxSimilarityScoreForFile < currSimilarityScore)
+                            maxSimilarityScoreForFile = currSimilarityScore;
                     }
                 }
+
+                if (bNeedCopyFile)
+                {
+                    // If file is "similar" - add it to queue so that reader thread will see it and its score
+                    iScoresDict.Enqueue(new KeyValuePair<string, int>(sourceFilePath, maxSimilarityScoreForFile));
+                    // notify waiting copy files thread that a file is ready in the queue
+                    mroContinueSignal.Set();
+                }
             }
-            mroFinishSignal.Set();
+
+            // Signal the reading thread that queue has ended
+            iScoresDict.Enqueue(new KeyValuePair<string, int>("END", -1));
         }
 
         // Linear complexity function to check how many identical numbers are between two integer-set-csv files
@@ -186,11 +205,20 @@ namespace DeveloperTest181217
 
             public void Run(string passedStr, string failedStr)
             {
-                if (test1())
+                if (sameSrcAndAuxTest(0, true))
                     Console.WriteLine(String.Format(passedStr, mClassName, "1"));
                 else
                     Console.WriteLine(String.Format(failedStr, mClassName, "1"));
+                if (sameSrcAndAuxTest(2, true))
+                    Console.WriteLine(String.Format(passedStr, mClassName, "2"));
+                else
+                    Console.WriteLine(String.Format(failedStr, mClassName, "2"));
                 /*
+                if (sameSrcAndAuxTest(8))
+                    Console.WriteLine(String.Format(passedStr, mClassName, "3"));
+                else
+                    Console.WriteLine(String.Format(failedStr, mClassName, "3"));
+                
                 if (testIntegerSetCsvLoaderNotEqual())
                     Console.WriteLine(String.Format(passedStr, mClassName, "NOT_EQUAL"));
                 else
@@ -202,25 +230,25 @@ namespace DeveloperTest181217
                     Console.WriteLine(String.Format(failedStr, mClassName, "ERROR_LOADING"));*/
             }
 
-            private bool test1(bool iEraseFilesAtTestEnd = false)
+            private bool sameSrcAndAuxTest(int iMinNumToSimilarity, bool iEraseFilesAtTestEnd = false)
             {
                 bool testRes = false;
 
                 // Create Source Dir
                 string sourceDirPath = Path.Combine(Directory.GetCurrentDirectory(), "src");
-                string[] sourceContents = { "", "1,2", "1,2,3", "1,2,3,4" };
+                string[] sourceContents = { "", "1", "1,2", "1,2,3", "1,2,3,4" };
                 createCsvDir(sourceDirPath, sourceContents);
 
                 // Create Aux Dir
                 string auxDirPath = Path.Combine(Directory.GetCurrentDirectory(), "auxillery");
-                string[] auxContents = { "", "1,2", "1,2,3", "1,2,3,4" };
+                string[] auxContents = { "", "1", "1,2", "1,2,3", "1,2,3,4" };
                 createCsvDir(auxDirPath, auxContents);
 
                 // Test
                 IntegersSetCsvManager manager = new IntegersSetCsvManager();
                 string destDirPath = Path.Combine(Directory.GetCurrentDirectory(), "dest");
-                manager.CopySimilarCsvs(sourceDirPath, auxDirPath, destDirPath, 3);
-                if (Directory.GetFiles(destDirPath).Length == 4)
+                manager.CopySimilarCsvs(sourceDirPath, auxDirPath, destDirPath, iMinNumToSimilarity);
+                if (Directory.GetFiles(destDirPath).Length == Math.Max((6 - iMinNumToSimilarity), 0))
                     testRes = true;
 
                 if (iEraseFilesAtTestEnd)

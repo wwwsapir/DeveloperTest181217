@@ -12,13 +12,16 @@ namespace DeveloperTest181217
         public IntegersSetCsv Load(string iFilePath)
         {
             StreamReader csvFile = File.OpenText(iFilePath);
-            string[] intArrayAsStrings = csvFile.ReadToEnd().Split(',');
+            string[] intArrayAsStrings = csvFile.ReadToEnd().Replace("\r\n", "").Split(',');
             csvFile.Close();
 
             List<int> intArray = new List<int>(intArrayAsStrings.Length);
-            foreach (string intStr in intArrayAsStrings)
+            if (intArrayAsStrings[0] != "")
             {
-                intArray.Add(int.Parse(intStr));
+                foreach (string intStr in intArrayAsStrings)
+                {
+                    intArray.Add(int.Parse(intStr));
+                }
             }
 
             return new IntegersSetCsv(iFilePath, intArray);
