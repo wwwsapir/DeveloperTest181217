@@ -58,7 +58,8 @@ namespace DeveloperTest181217
 
                 IntegersSetCsv testFile1 = loader.Load(testFile1Path);
                 List<int> expectedRes = new List<int> { 33, 21, 68, 34, 67, 222, 3, 4, 1 };
-                if (Enumerable.SequenceEqual(testFile1.Array, expectedRes))
+                if (Enumerable.SequenceEqual(testFile1.Array, expectedRes) &&
+                    (testFile1.FilePath == testFile1Path) )
                     return true;
                 else
                     return false;
