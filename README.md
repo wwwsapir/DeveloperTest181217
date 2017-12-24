@@ -15,4 +15,4 @@ We want to copy all CSV files from directory "A", which are similar to at least 
 Instruction:  
 Write a class which handles, in multi-threading, the loading, "similarity" testing and copying of files  
 The class should have a method which returns VOID and receives 3 strings (A,B & C, each a directory path) and an int (X, minimal amount of identical numbers).  
-This method should also write a "scores.txt" file in directory C which contain a line for every copied file from directory A. The line should look like: "<name of file> <tab> <maximum intersection score>"  
+This method should also write a "scores.txt" file in directory C which contain a line for every copied file from directory A. The line should look like: [name of file] [tab] [maximum intersection score]
